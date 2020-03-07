@@ -20,7 +20,16 @@ namespace RouletteColorScanner
         private static ScreenLocation betStart = new ScreenLocation(3200, 730);
         private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 860);
         private static ScreenLocation colorOfTurn = new ScreenLocation(3370, 860);
+        private static ScreenLocation betBlack = new ScreenLocation(2950, 955);
+        private static ScreenLocation betRed = new ScreenLocation(2830, 955);
         private static int greenEndsToStartTurnDelay = 14000;
+
+        1400, 560
+        1400, 560
+        1410, 133
+        700, 900
+        550, 900
+
 
         //Home-PC, Right Screen, Fullscreen, Auto-Roulette
         //private static ScreenLocation betStart = new ScreenLocation(3200, 560);
@@ -28,13 +37,26 @@ namespace RouletteColorScanner
         //private static ScreenLocation colorOfTurn = new ScreenLocation(3333, 142);
         //private static int greenEndsToStartTurnDelay = 14000;
 
+        private const int MOUSEEVENTF_LEFTDOWN = 0x0002; /* left button down */
+        private const int MOUSEEVENTF_LEFTUP = 0x0004; /* left button up */
+        [DllImport("user32.dll")]
+        public static extern void mouse_event(int dwFlags, int dx, int dy, int cButtons, int dwExtraInfo);
+
         private static bool betted = false;
+        private static int mouseSpeed = 15;
+        private static Random random = new Random();
 
         private static void Main(string[] args)
         {
+            bool moveMouse = true;
+            bool mouseMoved = false;
             int greenStreak = 0;
             int redStreak = 0;
             int blackStreak = 0;
+            int countStreak = 0;
+            int betStreak = 3;
+            int numOfClicks = 1;
+            int maxNumOfClicks = 8;
             Color c;
             Console.ReadKey();
             Console.WriteLine("Program started");
@@ -42,15 +64,46 @@ namespace RouletteColorScanner
             {
                 c = GetColorAt(betStart);
                 Thread.Sleep(10);
-            } 
+            }
+
             while (true)
             {
-                //Console.WriteLine("bet starts");
+                Console.WriteLine("bet starts");
                 do
                 {
                     c = GetColorAt(betStart);
                     Thread.Sleep(300);
+                    if (moveMouse && !mouseMoved)
+                    {
+                        if (countStreak == betStreak)
+                            numOfClicks = 1;
+                        if (redStreak >= betStreak && numOfClicks <= maxNumOfClicks)
+                        {
+                            MoveMouse(betBlack.X, betBlack.Y, 0, 0);
+                            Thread.Sleep(80);
+                            int sleepClickTime = random.Next(15, 40);
+                            for (int i = 0; i < numOfClicks; i++)
+                            {
+                                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                                Thread.Sleep(sleepClickTime);
+                            }
+                        } 
+                        else if (blackStreak >= betStreak && numOfClicks <= maxNumOfClicks)
+                        {
+                            MoveMouse(betRed.X, betRed.Y, 0, 0);
+                            Thread.Sleep(80);
+                            int sleepClickTime = random.Next(15, 40);
+                            for (int i = 0; i < numOfClicks; i++)
+                            {
+                                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                                Thread.Sleep(sleepClickTime);
+                            }
+                        }
+                        numOfClicks *= 2;
+                        mouseMoved = true;
+                    }
                 } while (c.R < 25 && c.B < 25 && c.G > 150);
+                mouseMoved = false;
 
                 Console.WriteLine("green ends");
                 Thread.Sleep(greenEndsToStartTurnDelay);
@@ -79,6 +132,10 @@ namespace RouletteColorScanner
                     redStreak = 0;
                     greenStreak++;
                     blackStreak = 0;
+                    //if (redStreak > 0)
+                    //    redStreak++;
+                    //else if (blackStreak > 0)
+                    //    blackStreak++;
                 } 
                 else if ((c.R > 75 && c.R < 130) && (c.G > 75 && c.G < 130) && (c.B > 75 && c.B < 130))
                 {
@@ -96,10 +153,10 @@ namespace RouletteColorScanner
                 Console.WriteLine("Red: " + redStreak);
                 Console.WriteLine("Black: " + blackStreak);
                 Console.WriteLine("Green: " + greenStreak);
-                int count = redStreak > 0 ? redStreak : blackStreak > 0 ? blackStreak : greenStreak > 0 ? greenStreak : 15;
-                if (count >= 3)
+                countStreak = redStreak > 0 ? redStreak : blackStreak > 0 ? blackStreak : greenStreak > 0 ? greenStreak : 15;
+                if (countStreak >= betStreak)
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int i = 0; i < countStreak; i++)
                     {
                         SystemSounds.Beep.Play();
                         Thread.Sleep(300);
@@ -119,6 +176,12 @@ namespace RouletteColorScanner
         [DllImport("user32.dll", SetLastError = true)]
         public static extern int ReleaseDC(IntPtr window, IntPtr dc);
 
+        [DllImport("user32.dll")]
+        static extern bool SetCursorPos(int X, int Y);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetCursorPos(out Point p);
+
         public static Color GetColorAt(ScreenLocation location)
         {
             IntPtr desk = GetDesktopWindow();
@@ -126,6 +189,98 @@ namespace RouletteColorScanner
             int a = (int)GetPixel(dc, location.X, location.Y);
             ReleaseDC(desk, dc);
             return Color.FromArgb(255, (a >> 0) & 0xff, (a >> 8) & 0xff, (a >> 16) & 0xff);
+        }
+
+
+        static void MoveMouse(int x, int y, int rx, int ry)
+        {
+            Point c = new Point();
+            GetCursorPos(out c);
+            
+
+            x += random.Next(rx);
+            y += random.Next(ry);
+
+            double randomSpeed = Math.Max((random.Next(mouseSpeed) / 2.0 + mouseSpeed) / 10.0, 0.1);
+
+            WindMouse(c.X, c.Y, x, y, 9.0, 3.0, 10.0 / randomSpeed,
+                15.0 / randomSpeed, 10.0 * randomSpeed, 10.0 * randomSpeed);
+        }
+
+        static void WindMouse(double xs, double ys, double xe, double ye,
+            double gravity, double wind, double minWait, double maxWait,
+            double maxStep, double targetArea)
+        {
+
+            double dist, windX = 0, windY = 0, veloX = 0, veloY = 0, randomDist, veloMag, step;
+            int oldX, oldY, newX = (int)Math.Round(xs), newY = (int)Math.Round(ys);
+
+            double waitDiff = maxWait - minWait;
+            double sqrt2 = Math.Sqrt(2.0);
+            double sqrt3 = Math.Sqrt(3.0);
+            double sqrt5 = Math.Sqrt(5.0);
+
+            dist = Hypot(xe - xs, ye - ys);
+
+            while (dist > 1.0)
+            {
+
+                wind = Math.Min(wind, dist);
+
+                if (dist >= targetArea)
+                {
+                    int w = random.Next((int)Math.Round(wind) * 2 + 1);
+                    windX = windX / sqrt3 + (w - wind) / sqrt5;
+                    windY = windY / sqrt3 + (w - wind) / sqrt5;
+                }
+                else
+                {
+                    windX = windX / sqrt2;
+                    windY = windY / sqrt2;
+                    if (maxStep < 3)
+                        maxStep = random.Next(3) + 3.0;
+                    else
+                        maxStep = maxStep / sqrt5;
+                }
+
+                veloX += windX;
+                veloY += windY;
+                veloX = veloX + gravity * (xe - xs) / dist;
+                veloY = veloY + gravity * (ye - ys) / dist;
+
+                if (Hypot(veloX, veloY) > maxStep)
+                {
+                    randomDist = maxStep / 2.0 + random.Next((int)Math.Round(maxStep) / 2);
+                    veloMag = Hypot(veloX, veloY);
+                    veloX = (veloX / veloMag) * randomDist;
+                    veloY = (veloY / veloMag) * randomDist;
+                }
+
+                oldX = (int)Math.Round(xs);
+                oldY = (int)Math.Round(ys);
+                xs += veloX;
+                ys += veloY;
+                dist = Hypot(xe - xs, ye - ys);
+                newX = (int)Math.Round(xs);
+                newY = (int)Math.Round(ys);
+
+                if (oldX != newX || oldY != newY)
+                    SetCursorPos(newX, newY);
+
+                step = Hypot(xs - oldX, ys - oldY);
+                int wait = (int)Math.Round(waitDiff * (step / maxStep) + minWait);
+                Thread.Sleep(wait);
+            }
+
+            int endX = (int)Math.Round(xe);
+            int endY = (int)Math.Round(ye);
+            if (endX != newX || endY != newY)
+                SetCursorPos(endX, endY);
+        }
+
+        static double Hypot(double dx, double dy)
+        {
+            return Math.Sqrt(dx * dx + dy * dy);
         }
     }
 }
