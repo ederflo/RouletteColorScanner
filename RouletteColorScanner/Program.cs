@@ -17,25 +17,26 @@ namespace RouletteColorScanner
     class Program
     {
         //Home-PC, Right Screen, Fullscreen, Live Roulette
-        private static ScreenLocation betStart = new ScreenLocation(3200, 730);
-        private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 860);
-        private static ScreenLocation colorOfTurn = new ScreenLocation(3370, 860);
-        private static ScreenLocation betBlack = new ScreenLocation(2950, 955);
-        private static ScreenLocation betRed = new ScreenLocation(2830, 955);
-        private static int greenEndsToStartTurnDelay = 14000;
-
-        1400, 560
-        1400, 560
-        1410, 133
-        700, 900
-        550, 900
-
+        //private static ScreenLocation betStart = new ScreenLocation(3200, 730);
+        //private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 860);
+        //private static ScreenLocation colorOfTurn = new ScreenLocation(3370, 860);
+        //private static ScreenLocation betBlack = new ScreenLocation(2950, 955);
+        //private static ScreenLocation betRed = new ScreenLocation(2830, 955);
+        //private static int greenEndsToStartTurnDelay = 14000;
 
         //Home-PC, Right Screen, Fullscreen, Auto-Roulette
         //private static ScreenLocation betStart = new ScreenLocation(3200, 560);
         //private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 560);
         //private static ScreenLocation colorOfTurn = new ScreenLocation(3333, 142);
         //private static int greenEndsToStartTurnDelay = 14000;
+
+        //Laptop, Fullscreen, Auto-Roulette
+        private static ScreenLocation betStart = new ScreenLocation(1400, 560);
+        private static ScreenLocation waitForTurnEnd = new ScreenLocation(1400, 560);
+        private static ScreenLocation colorOfTurn = new ScreenLocation(1410, 133);
+        private static ScreenLocation betBlack = new ScreenLocation(700, 900);
+        private static ScreenLocation betRed = new ScreenLocation(550, 900);
+        private static int greenEndsToStartTurnDelay = 14000;
 
         private const int MOUSEEVENTF_LEFTDOWN = 0x0002; /* left button down */
         private const int MOUSEEVENTF_LEFTUP = 0x0004; /* left button up */
@@ -54,9 +55,10 @@ namespace RouletteColorScanner
             int redStreak = 0;
             int blackStreak = 0;
             int countStreak = 0;
-            int betStreak = 3;
-            int numOfClicks = 1;
-            int maxNumOfClicks = 8;
+            int betStreak = 2;
+            int defaultNumOfClicks = 1;
+            int numOfClicks = defaultNumOfClicks;
+            int maxNumOfClicks = 512;
             Color c;
             Console.ReadKey();
             Console.WriteLine("Program started");
@@ -75,34 +77,39 @@ namespace RouletteColorScanner
                     Thread.Sleep(300);
                     if (moveMouse && !mouseMoved)
                     {
-                        if (countStreak == betStreak)
-                            numOfClicks = 1;
-                        if (redStreak >= betStreak && numOfClicks <= maxNumOfClicks)
+                        if (countStreak >= betStreak)
                         {
-                            MoveMouse(betBlack.X, betBlack.Y, 0, 0);
-                            Thread.Sleep(80);
-                            int sleepClickTime = random.Next(15, 40);
-                            for (int i = 0; i < numOfClicks; i++)
+                            if (countStreak == betStreak)
+                                numOfClicks = defaultNumOfClicks;
+                            if (redStreak >= betStreak && numOfClicks <= maxNumOfClicks)
                             {
-                                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                                Thread.Sleep(sleepClickTime);
+                                MoveMouse(betBlack.X, betBlack.Y, 0, 0);
+                                Thread.Sleep(80);
+                                int sleepClickTime = random.Next(50, 120);
+                                for (int i = 0; i < numOfClicks; i++)
+                                {
+                                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                                    Thread.Sleep(sleepClickTime);
+                                }
                             }
-                        } 
-                        else if (blackStreak >= betStreak && numOfClicks <= maxNumOfClicks)
-                        {
-                            MoveMouse(betRed.X, betRed.Y, 0, 0);
-                            Thread.Sleep(80);
-                            int sleepClickTime = random.Next(15, 40);
-                            for (int i = 0; i < numOfClicks; i++)
+                            else if (blackStreak >= betStreak && numOfClicks <= maxNumOfClicks)
                             {
-                                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                                Thread.Sleep(sleepClickTime);
+                                MoveMouse(betRed.X, betRed.Y, 0, 0);
+                                Thread.Sleep(80);
+                                int sleepClickTime = random.Next(50, 120);
+                                for (int i = 0; i < numOfClicks; i++)
+                                {
+                                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                                    Thread.Sleep(sleepClickTime);
+                                }
                             }
+                            numOfClicks *= 2;
+                            mouseMoved = true;
                         }
-                        numOfClicks *= 2;
-                        mouseMoved = true;
                     }
-                } while (c.R < 25 && c.B < 25 && c.G > 150);
+                        
+
+                } while (c.R < 50 && c.B < 50 && c.G > 150);
                 mouseMoved = false;
 
                 Console.WriteLine("green ends");
@@ -112,7 +119,7 @@ namespace RouletteColorScanner
                 {
                     c = GetColorAt(waitForTurnEnd);
                     Thread.Sleep(300);
-                } while ((c.R > 65 && c.R < 95) && (c.G > 65 && c.G < 95) && (c.B > 65 && c.B < 95));
+                } while ((c.R > 65 && c.R < 130) && (c.G > 65 && c.G < 130) && (c.B > 65 && c.B < 130));
                 Console.WriteLine("turn ends");
                 Thread.Sleep(1500);
                 c = GetColorAt(colorOfTurn);
