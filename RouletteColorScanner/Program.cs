@@ -148,10 +148,14 @@ namespace RouletteColorScanner
                     //redStreak = 0;
                     //greenStreak++;
                     //blackStreak = 0;
-                    if (redStreak > 0)
+                    if (redStreak > betStreak)
                         redStreak++;
-                    else if (blackStreak > 0)
+                    else
+                        redStreak = 0;
+                    if (blackStreak > betStreak)
                         blackStreak++;
+                    else
+                        blackStreak = 0;
                 } 
                 else if ((c.R > 75 && c.R < 130) && (c.G > 75 && c.G < 130) && (c.B > 75 && c.B < 130))
                 {
