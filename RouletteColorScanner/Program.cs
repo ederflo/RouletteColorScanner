@@ -22,21 +22,25 @@ namespace RouletteColorScanner
         //private static ScreenLocation colorOfTurn = new ScreenLocation(3370, 860);
         //private static ScreenLocation betBlack = new ScreenLocation(2950, 955);
         //private static ScreenLocation betRed = new ScreenLocation(2830, 955);
+        //private static ScreenLocation doubleValue = new ScreenLocation(3100, 1055);
         //private static int greenEndsToStartTurnDelay = 14000;
 
         //Home-PC, Right Screen, Fullscreen, Auto-Roulette
-        //private static ScreenLocation betStart = new ScreenLocation(3200, 560);
-        //private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 560);
-        //private static ScreenLocation colorOfTurn = new ScreenLocation(3333, 142);
-        //private static int greenEndsToStartTurnDelay = 14000;
+        private static ScreenLocation betStart = new ScreenLocation(3200, 560);
+        private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 560);
+        private static ScreenLocation colorOfTurn = new ScreenLocation(3333, 142);
+        private static ScreenLocation betBlack = new ScreenLocation(2600, 900);
+        private static ScreenLocation betRed = new ScreenLocation(2500, 900);
+        private static ScreenLocation doubleValue = new ScreenLocation(3100, 1055);
+        private static int greenEndsToStartTurnDelay = 14000;
 
         //Laptop, Fullscreen, Auto-Roulette
-        private static ScreenLocation betStart = new ScreenLocation(1400, 560);
-        private static ScreenLocation waitForTurnEnd = new ScreenLocation(1400, 560);
-        private static ScreenLocation colorOfTurn = new ScreenLocation(1410, 133);
-        private static ScreenLocation betBlack = new ScreenLocation(700, 900);
-        private static ScreenLocation betRed = new ScreenLocation(550, 900);
-        private static int greenEndsToStartTurnDelay = 14000;
+        //private static ScreenLocation betStart = new ScreenLocation(1400, 560);
+        //private static ScreenLocation waitForTurnEnd = new ScreenLocation(1400, 560);
+        //private static ScreenLocation colorOfTurn = new ScreenLocation(1410, 133);
+        //private static ScreenLocation betBlack = new ScreenLocation(700, 900);
+        //private static ScreenLocation betRed = new ScreenLocation(550, 900);
+        //private static int greenEndsToStartTurnDelay = 14000;
 
         private const int MOUSEEVENTF_LEFTDOWN = 0x0002; /* left button down */
         private const int MOUSEEVENTF_LEFTUP = 0x0004; /* left button up */
@@ -50,7 +54,9 @@ namespace RouletteColorScanner
         private static void Main(string[] args)
         {
             bool moveMouse = true;
+            bool movedMouseToColor = false;
             bool mouseMoved = false;
+            bool sound = false;
             int greenStreak = 0;
             int redStreak = 0;
             int blackStreak = 0;
@@ -58,7 +64,7 @@ namespace RouletteColorScanner
             int betStreak = 2;
             int defaultNumOfClicks = 1;
             int numOfClicks = defaultNumOfClicks;
-            int maxNumOfClicks = 512;
+            int maxStreak = 10;
             Color c;
             Console.ReadKey();
             Console.WriteLine("Program started");
@@ -79,25 +85,26 @@ namespace RouletteColorScanner
                     {
                         if (countStreak >= betStreak)
                         {
-                            if (countStreak == betStreak)
-                                numOfClicks = defaultNumOfClicks;
-                            if (redStreak >= betStreak && numOfClicks <= maxNumOfClicks)
+                            if (redStreak >= betStreak && countStreak <= maxStreak)
                             {
                                 MoveMouse(betBlack.X, betBlack.Y, 0, 0);
-                                Thread.Sleep(80);
-                                int sleepClickTime = random.Next(50, 120);
-                                for (int i = 0; i < numOfClicks; i++)
-                                {
-                                    mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                                    Thread.Sleep(sleepClickTime);
-                                }
+                                Thread.Sleep(200);
+                                movedMouseToColor = true;
                             }
-                            else if (blackStreak >= betStreak && numOfClicks <= maxNumOfClicks)
+                            else if (blackStreak >= betStreak && countStreak <= maxStreak)
                             {
                                 MoveMouse(betRed.X, betRed.Y, 0, 0);
+                                Thread.Sleep(200);
+                                movedMouseToColor = true;
+                            }
+
+                            if (movedMouseToColor)
+                            {
+                                mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+                                MoveMouse(doubleValue.X, doubleValue.Y, 0, 0);
                                 Thread.Sleep(80);
-                                int sleepClickTime = random.Next(50, 120);
-                                for (int i = 0; i < numOfClicks; i++)
+                                int sleepClickTime = random.Next(50, 120); 
+                                for (int i = 0; i < countStreak - betStreak; i++)
                                 {
                                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
                                     Thread.Sleep(sleepClickTime);
@@ -105,6 +112,7 @@ namespace RouletteColorScanner
                             }
                             numOfClicks *= 2;
                             mouseMoved = true;
+                            movedMouseToColor = false;
                         }
                     }
                         
@@ -127,7 +135,8 @@ namespace RouletteColorScanner
                 {
                     if (betted && redStreak == 0)
                     {
-                        SystemSounds.Beep.Play();
+                        if (sound)
+                            SystemSounds.Beep.Play();
                         betted = false;
                     }
                     redStreak++;
@@ -136,19 +145,20 @@ namespace RouletteColorScanner
                 }
                 else if (c.G >= 100 && c.B < 90 && c.R < 90)
                 {
-                    redStreak = 0;
-                    greenStreak++;
-                    blackStreak = 0;
-                    //if (redStreak > 0)
-                    //    redStreak++;
-                    //else if (blackStreak > 0)
-                    //    blackStreak++;
+                    //redStreak = 0;
+                    //greenStreak++;
+                    //blackStreak = 0;
+                    if (redStreak > 0)
+                        redStreak++;
+                    else if (blackStreak > 0)
+                        blackStreak++;
                 } 
                 else if ((c.R > 75 && c.R < 130) && (c.G > 75 && c.G < 130) && (c.B > 75 && c.B < 130))
                 {
                     if (betted && blackStreak == 0)
                     {
-                        SystemSounds.Beep.Play();
+                        if (sound)
+                            SystemSounds.Beep.Play();
                         betted = false;
                     }
                     redStreak = 0;
@@ -165,7 +175,8 @@ namespace RouletteColorScanner
                 {
                     for (int i = 0; i < countStreak; i++)
                     {
-                        SystemSounds.Beep.Play();
+                        if (sound)
+                            SystemSounds.Beep.Play();
                         Thread.Sleep(300);
                     }
                     
