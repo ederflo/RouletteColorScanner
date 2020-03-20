@@ -26,21 +26,33 @@ namespace RouletteColorScanner
         //private static int greenEndsToStartTurnDelay = 14000;
 
         //Home-PC, Right Screen, Fullscreen, Auto-Roulette
-        private static ScreenLocation betStart = new ScreenLocation(3200, 560);
-        private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 560);
-        private static ScreenLocation colorOfTurn = new ScreenLocation(3333, 142);
-        private static ScreenLocation betBlack = new ScreenLocation(2600, 900);
-        private static ScreenLocation betRed = new ScreenLocation(2500, 900);
-        private static ScreenLocation doubleValue = new ScreenLocation(3100, 1055);
-        private static int greenEndsToStartTurnDelay = 14000;
+        //private static ScreenLocation betStart = new ScreenLocation(3200, 560);
+        //private static ScreenLocation waitForTurnEnd = new ScreenLocation(3200, 560);
+        //private static ScreenLocation colorOfTurn = new ScreenLocation(3333, 142);
+        //private static ScreenLocation betBlack = new ScreenLocation(2600, 900);
+        //private static ScreenLocation betRed = new ScreenLocation(2500, 900);
+        //private static ScreenLocation doubleValue = new ScreenLocation(3100, 1055);
+        //private static int greenEndsToStartTurnDelay = 14000;
 
         //Laptop, Fullscreen, Auto-Roulette
-        //private static ScreenLocation betStart = new ScreenLocation(1400, 560);
-        //private static ScreenLocation waitForTurnEnd = new ScreenLocation(1400, 560);
-        //private static ScreenLocation colorOfTurn = new ScreenLocation(1410, 133);
-        //private static ScreenLocation betBlack = new ScreenLocation(700, 900);
-        //private static ScreenLocation betRed = new ScreenLocation(550, 900);
-        //private static int greenEndsToStartTurnDelay = 14000;
+        private static ScreenLocation betStart = new ScreenLocation(1400, 560);
+        private static ScreenLocation waitForTurnEnd = new ScreenLocation(1400, 560);
+        private static ScreenLocation colorOfTurn = new ScreenLocation(1410, 133);
+
+        private static ScreenLocation betBlack = new ScreenLocation(700, 900);
+        private static ScreenLocation betRed = new ScreenLocation(550, 900);
+        private static ScreenLocation doubleValue = new ScreenLocation(1195, 1050);
+
+        private static ScreenLocation openRouletteWindow = new ScreenLocation(530, 385);
+        private static ScreenLocation maximizeRouletteWindow = new ScreenLocation(1585, 175);
+        private static ScreenLocation enterFullScreen = new ScreenLocation(1455, 140);
+        private static ScreenLocation exitFullScreen = new ScreenLocation(1890, 30);
+        private static ScreenLocation closeRouletteWindow = new ScreenLocation(1900, 10);
+        private static ScreenLocation openRoulette = new ScreenLocation(1700, 550); // Auto-Roulette 0,10 - ...
+        private static ScreenLocation changeRouletteView = new ScreenLocation(1610, 30);
+
+
+        private static int greenEndsToStartTurnDelay = 14000;
 
         private const int MOUSEEVENTF_LEFTDOWN = 0x0002; /* left button down */
         private const int MOUSEEVENTF_LEFTUP = 0x0004; /* left button up */
@@ -50,9 +62,12 @@ namespace RouletteColorScanner
         private static bool betted = false;
         private static int mouseSpeed = 15;
         private static Random random = new Random();
+        private static DateTime lastReOpened = DateTime.Now;
 
         private static void Main(string[] args)
         {
+            bool reOpenTable = true;
+            TimeSpan reOpenTS = new TimeSpan(0, 40, 0);
             bool moveMouse = true;
             bool movedMouseToColor = false;
             bool mouseMoved = false;
@@ -64,15 +79,12 @@ namespace RouletteColorScanner
             int betStreak = 2;
             int defaultNumOfClicks = 1;
             int numOfClicks = defaultNumOfClicks;
-            int maxStreak = 10;
+            int maxStreak = 12;
             Color c;
             Console.ReadKey();
             Console.WriteLine("Program started");
-            for (int i = 0; i< 5; i++)
-            {
-                c = GetColorAt(betStart);
-                Thread.Sleep(10);
-            }
+            if (reOpenTable)
+                openCompleteRouletteWindow();
 
             while (true)
             {
@@ -104,7 +116,7 @@ namespace RouletteColorScanner
                                 MoveMouse(doubleValue.X, doubleValue.Y, 0, 0);
                                 Thread.Sleep(80);
                                 int sleepClickTime = random.Next(50, 120); 
-                                for (int i = 0; i < countStreak - betStreak; i++)
+                                for (int i = 0; i < (countStreak - betStreak); i++)
                                 {
                                     mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
                                     Thread.Sleep(sleepClickTime);
@@ -174,7 +186,7 @@ namespace RouletteColorScanner
                 Console.WriteLine("Red: " + redStreak);
                 Console.WriteLine("Black: " + blackStreak);
                 Console.WriteLine("Green: " + greenStreak);
-                countStreak = redStreak > 0 ? redStreak : blackStreak > 0 ? blackStreak : greenStreak > 0 ? greenStreak : 15;
+                countStreak = redStreak > 0 ? redStreak : blackStreak > 0 ? blackStreak : greenStreak > 0 ? greenStreak : 0;
                 if (countStreak >= betStreak)
                 {
                     for (int i = 0; i < countStreak; i++)
@@ -186,7 +198,57 @@ namespace RouletteColorScanner
                     
                     betted = true;
                 }
+
+                if (reOpenTable && countStreak <= 1 && (DateTime.Now - lastReOpened).TotalMinutes >= reOpenTS.TotalMinutes)
+                {
+                    closeCompleteRouletteWindow();
+                    Thread.Sleep(2000);
+                    openCompleteRouletteWindow();
+                    redStreak = 0;
+                    greenStreak = 0;
+                    blackStreak = 0;
+                    countStreak = 0;
+                }
             }     
+        }
+
+        public static void openCompleteRouletteWindow()
+        {
+            Color c;
+            Thread.Sleep(5000);
+            MoveMouse(openRouletteWindow.X, openRouletteWindow.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(3000);
+            MoveMouse(maximizeRouletteWindow.X, maximizeRouletteWindow.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(800);
+            MoveMouse(enterFullScreen.X, enterFullScreen.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(800);
+            MoveMouse(openRoulette.X, openRoulette.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(2500);
+            MoveMouse(changeRouletteView.X, changeRouletteView.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(2000);
+
+            lastReOpened = DateTime.Now;
+            do
+            {
+                c = GetColorAt(betStart);
+                Thread.Sleep(400);
+            } while (!(c.R < 50 && c.B < 50 && c.G > 150));
+            Thread.Sleep(1500);
+        }
+
+        public static void closeCompleteRouletteWindow()
+        {
+            MoveMouse(exitFullScreen.X, exitFullScreen.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(3000);
+            MoveMouse(closeRouletteWindow.X, closeRouletteWindow.Y, 0, 0);
+            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            Thread.Sleep(4000);
         }
 
         [DllImport("user32.dll", SetLastError = true)]
